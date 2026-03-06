@@ -26,6 +26,27 @@
     var animId;
     var time = 0;
 
+    // Gold sparkle particles
+    var particles = [];
+    var PARTICLE_COUNT = 60;
+
+    function initParticles(w, h) {
+      particles = [];
+      for (var i = 0; i < PARTICLE_COUNT; i++) {
+        particles.push({
+          x: Math.random() * w,
+          y: Math.random() * h,
+          size: 0.5 + Math.random() * 2,
+          speedX: -0.15 + Math.random() * 0.3,
+          speedY: -0.1 + Math.random() * 0.2,
+          drift: 0.0005 + Math.random() * 0.001,
+          phase: Math.random() * Math.PI * 2,
+          twinkleSpeed: 0.001 + Math.random() * 0.002,
+          baseAlpha: 0.15 + Math.random() * 0.45,
+        });
+      }
+    }
+
     // Aurora color orbs - positions and properties
     var orbs = [
       {
@@ -146,6 +167,74 @@
       blendGrad.addColorStop(1, "rgba(51,42,62,0.35)");
       ctx.fillStyle = blendGrad;
       ctx.fillRect(0, 0, w, h);
+
+      // Draw gold sparkle particles
+      for (var p = 0; p < particles.length; p++) {
+        var pt = particles[p];
+
+        // Gentle floating movement
+        pt.x += pt.speedX + Math.sin(t * pt.drift + pt.phase) * 0.3;
+        pt.y += pt.speedY + Math.cos(t * pt.drift * 0.7 + pt.phase) * 0.2;
+
+        // Wrap around edges smoothly
+        if (pt.x < -10) pt.x = w + 10;
+        if (pt.x > w + 10) pt.x = -10;
+        if (pt.y < -10) pt.y = h + 10;
+        if (pt.y > h + 10) pt.y = -10;
+
+        // Twinkling alpha
+        var twinkle =
+          pt.baseAlpha *
+          (0.4 + 0.6 * Math.abs(Math.sin(t * pt.twinkleSpeed + pt.phase)));
+
+        // Gold tones: warm white to gold
+        var goldR = 255;
+        var goldG =
+          215 + Math.floor(30 * Math.sin(t * pt.twinkleSpeed * 0.5 + pt.phase));
+        var goldB =
+          120 + Math.floor(40 * Math.sin(t * pt.twinkleSpeed * 0.8 + pt.phase));
+
+        // Soft glow halo
+        var glowSize = pt.size * 4;
+        var glow = ctx.createRadialGradient(
+          pt.x,
+          pt.y,
+          0,
+          pt.x,
+          pt.y,
+          glowSize,
+        );
+        glow.addColorStop(
+          0,
+          "rgba(" +
+            goldR +
+            "," +
+            goldG +
+            "," +
+            goldB +
+            "," +
+            twinkle * 0.3 +
+            ")",
+        );
+        glow.addColorStop(
+          1,
+          "rgba(" + goldR + "," + goldG + "," + goldB + ",0)",
+        );
+        ctx.fillStyle = glow;
+        ctx.fillRect(
+          pt.x - glowSize,
+          pt.y - glowSize,
+          glowSize * 2,
+          glowSize * 2,
+        );
+
+        // Bright core
+        ctx.beginPath();
+        ctx.arc(pt.x, pt.y, pt.size, 0, Math.PI * 2);
+        ctx.fillStyle =
+          "rgba(" + goldR + "," + goldG + "," + goldB + "," + twinkle + ")";
+        ctx.fill();
+      }
     }
 
     function animate(timestamp) {
@@ -155,10 +244,12 @@
     }
 
     resizeCanvas();
+    initParticles(canvas.width, canvas.height);
     animate(0);
 
     window.addEventListener("resize", function () {
       resizeCanvas();
+      initParticles(canvas.width, canvas.height);
       drawAurora(time);
     });
 
