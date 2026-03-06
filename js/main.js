@@ -18,6 +18,166 @@
   const messageField = document.getElementById("message");
   const floatingCta = document.getElementById("floatingCta");
 
+  // --- Aurora canvas background ---
+  var canvas = document.getElementById("auroraCanvas");
+  if (canvas) {
+    var ctx = canvas.getContext("2d");
+    var dpr = window.devicePixelRatio || 1;
+    var animId;
+    var time = 0;
+
+    // Aurora color orbs - positions and properties
+    var orbs = [
+      {
+        x: 0.2,
+        y: 0.8,
+        r: 0.45,
+        color: [187, 190, 100],
+        speed: 0.0003,
+        phase: 0,
+      },
+      {
+        x: 0.8,
+        y: 0.2,
+        r: 0.5,
+        color: [125, 132, 145],
+        speed: 0.00025,
+        phase: 2,
+      },
+      { x: 0.5, y: 0.5, r: 0.4, color: [90, 77, 106], speed: 0.0002, phase: 4 },
+      {
+        x: 0.3,
+        y: 0.3,
+        r: 0.35,
+        color: [68, 56, 80],
+        speed: 0.00035,
+        phase: 1,
+      },
+      {
+        x: 0.7,
+        y: 0.7,
+        r: 0.38,
+        color: [160, 163, 74],
+        speed: 0.00028,
+        phase: 3,
+      },
+      {
+        x: 0.15,
+        y: 0.4,
+        r: 0.3,
+        color: [100, 90, 120],
+        speed: 0.00032,
+        phase: 5,
+      },
+    ];
+
+    function resizeCanvas() {
+      var rect = canvas.parentElement.getBoundingClientRect();
+      canvas.width = rect.width * dpr;
+      canvas.height = rect.height * dpr;
+      canvas.style.width = rect.width + "px";
+      canvas.style.height = rect.height + "px";
+    }
+
+    function drawAurora(t) {
+      var w = canvas.width;
+      var h = canvas.height;
+
+      // Dark base
+      ctx.fillStyle = "#2a2035";
+      ctx.fillRect(0, 0, w, h);
+
+      // Draw each orb with slow orbital movement
+      for (var i = 0; i < orbs.length; i++) {
+        var orb = orbs[i];
+        var cx = w * (orb.x + 0.15 * Math.sin(t * orb.speed * 2 + orb.phase));
+        var cy = h * (orb.y + 0.1 * Math.cos(t * orb.speed * 1.5 + orb.phase));
+        var radius = Math.max(w, h) * orb.r;
+
+        // Pulsating size
+        var pulse = 1 + 0.08 * Math.sin(t * orb.speed * 3 + orb.phase);
+        radius *= pulse;
+
+        var gradient = ctx.createRadialGradient(cx, cy, 0, cx, cy, radius);
+        var alpha = 0.25 + 0.08 * Math.sin(t * orb.speed * 4 + orb.phase);
+        gradient.addColorStop(
+          0,
+          "rgba(" +
+            orb.color[0] +
+            "," +
+            orb.color[1] +
+            "," +
+            orb.color[2] +
+            "," +
+            alpha +
+            ")",
+        );
+        gradient.addColorStop(
+          0.5,
+          "rgba(" +
+            orb.color[0] +
+            "," +
+            orb.color[1] +
+            "," +
+            orb.color[2] +
+            "," +
+            alpha * 0.4 +
+            ")",
+        );
+        gradient.addColorStop(
+          1,
+          "rgba(" +
+            orb.color[0] +
+            "," +
+            orb.color[1] +
+            "," +
+            orb.color[2] +
+            ",0)",
+        );
+
+        ctx.fillStyle = gradient;
+        ctx.fillRect(0, 0, w, h);
+      }
+
+      // Soft light blend layer for smoothness
+      var blendGrad = ctx.createLinearGradient(0, 0, w, h);
+      blendGrad.addColorStop(0, "rgba(68,56,80,0.3)");
+      blendGrad.addColorStop(0.5, "rgba(90,77,106,0.15)");
+      blendGrad.addColorStop(1, "rgba(51,42,62,0.35)");
+      ctx.fillStyle = blendGrad;
+      ctx.fillRect(0, 0, w, h);
+    }
+
+    function animate(timestamp) {
+      time = timestamp || 0;
+      drawAurora(time);
+      animId = requestAnimationFrame(animate);
+    }
+
+    resizeCanvas();
+    animate(0);
+
+    window.addEventListener("resize", function () {
+      resizeCanvas();
+      drawAurora(time);
+    });
+
+    // Pause animation when hero is not visible
+    var heroSection = document.getElementById("hero");
+    var heroObserver = new IntersectionObserver(
+      function (entries) {
+        if (entries[0].isIntersecting) {
+          if (!animId) animate(time);
+        } else {
+          cancelAnimationFrame(animId);
+          animId = null;
+        }
+      },
+      { threshold: 0 },
+    );
+    heroObserver.observe(heroSection);
+  }
+
   // --- Header scroll behavior ---
   function handleScroll() {
     const scrolled = window.scrollY > 50;
